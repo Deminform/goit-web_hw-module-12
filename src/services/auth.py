@@ -1,5 +1,3 @@
-import os
-from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -9,14 +7,12 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
 
+from conf.config import SECRET_KEY, ALGORITHM
 from database.db import get_db
 # from src.users.repository import users as repository_users
 
 
 class Auth:
-    load_dotenv()
-    SECRET_KEY = os.getenv("SECRET_KEY")
-    ALGORITHM = "HS256"
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -38,7 +34,7 @@ class Auth:
         else:
             expire = datetime.now(timezone.utc) + timedelta(minutes=15)
         to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
 
@@ -50,7 +46,7 @@ class Auth:
         else:
             expire = datetime.utcnow() + timedelta(minutes=15)
         to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
 
@@ -63,7 +59,7 @@ class Auth:
 
         try:
             # Decode JWT
-            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             email = payload["sub"]
             if email is None:
                 raise credentials_exception
