@@ -9,13 +9,11 @@ from jose import JWTError, jwt
 
 from conf.config import SECRET_KEY, ALGORITHM
 from database.db import get_db
-# from src.users.repository import users as repository_users
+from src.users import repository as user_repository
 
 
 class Auth:
-
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
     def verify_password(self, plain_password, hashed_password):
         return self.pwd_context.verify(plain_password, hashed_password)
@@ -27,7 +25,8 @@ class Auth:
 
 
     # define a function to generate a new access token
-    async def create_access_token(self, data: dict, expires_delta: Optional[float] = None):
+    @staticmethod
+    async def create_access_token(data: dict, expires_delta: Optional[float] = None):
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.now(timezone.utc) + timedelta(seconds=expires_delta)
@@ -37,20 +36,31 @@ class Auth:
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
-
-    # define a function to generate a new access token
-    async def create_refresh_token(self, data: dict, expires_delta: Optional[float] = None):
+    # define a function to refresh a token
+    @staticmethod
+    async def refresh_access_token(data: dict, expires_delta: Optional[float] = None):
         to_encode = data.copy()
         if expires_delta:
-            expire = datetime.utcnow() + timedelta(seconds=expires_delta)
+            expire = datetime.now(timezone.utc) + timedelta(seconds=expires_delta)
         else:
-            expire = datetime.utcnow() + timedelta(minutes=15)
-        to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-        return encoded_jwt
+            expire = datetime.now(timezone.utc) + timedelta(days=7)
+        to_encode.update({'iat': datetime.now(timezone.utc), 'exp': expire, 'scope': 'refresh_token'})
+        encoded_refresh_token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_refresh_token
 
+    @staticmethod
+    async def decode_refresh_token(token: str):
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            if payload['scope'] == 'refresh_token':
+                email = payload['sub']
+                return email
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid scope for token')
+        except JWTError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate credentials')
 
-    async def get_current_user(self, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    @staticmethod
+    async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -60,13 +70,19 @@ class Auth:
         try:
             # Decode JWT
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            email = payload["sub"]
-            if email is None:
+            if payload['scope'] == 'access_token':
+                email = payload["sub"]
+                if email is None:
+                    raise credentials_exception
+            else:
                 raise credentials_exception
         except JWTError as e:
             raise credentials_exception
 
-        user: User = db.query(User).filter(User.email == email).first()
+        user = await user_repository.get_sers_by_email(email, db)
         if user is None:
             raise credentials_exception
         return user
+
+
+auth_service = Auth()
