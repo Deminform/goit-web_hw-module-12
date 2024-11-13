@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "goit-web-hw-module-11"
+version = "0.1.0"
+description = ""
+authors = ["Deminform <deminform@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.2"
+uvicorn = {extras = ["standard"], version = "^0.32.0"}
+sqlalchemy = "^2.0.36"
+python-dotenv = "^1.0.1"
+python-multipart = "^0.0.16"
+psycopg2 = "^2.9.10"
+alembic = "^1.14.0"
+asyncpg = "^0.30.0"
+pydantic = {extras = ["email"], version = "^2.9.2"}
+starlette = "^0.41.2"
+passlib = {version = "^1.7.4", extras = ["bcrypt"]}
+python-jose = "^3.3.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
