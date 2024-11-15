@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field, EmailStr
 
@@ -12,6 +12,15 @@ class ContactSchema(BaseModel):
     description: str = Field(None, max_length=300)
 
 
+class ContactResponseSchema(ContactSchema):
+    id: int
+    created_at: datetime | None
+    updated_at: datetime | None
+
+    class Config:
+        from_attributes = True
+
+
 class ContactCreateSchema(ContactSchema):
     pass
 
@@ -23,10 +32,3 @@ class ContactUpdateSchema(ContactSchema):
     phone: str = Field(None, max_length=10)
     birthday: date = Field(None)
     description: str = Field(None, max_length=300)
-
-
-class ContactResponseSchema(ContactSchema):
-    id: int
-
-    class Config:
-        from_attributes = True

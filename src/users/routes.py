@@ -2,7 +2,6 @@ from fastapi import HTTPException, Depends, status, APIRouter, Security
 from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from conf.config import password
 from database.db import get_db
 from src.users import repository as user_repository
 from src.users.schemas import UserSchema, UserResponseSchema, TokenSchema
@@ -29,11 +28,7 @@ async def login(body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = 
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email")
     if not auth_service.verify_password(body.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
-
-    new_access_token = await auth_service.create_access_token(data={'sub': user.email})
-    new_refresh_token = await auth_service.create_refresh_token(data={'sub': user.email})
-    await user_repository.update_token(user, new_refresh_token, db)
-    return {'access_token': new_access_token, 'refresh_token': new_refresh_token, 'token_type': 'bearer'}
+    return await create_and_update_tokens(user, db)
 
 
 @router.get('/refresh_token', response_model=TokenSchema)
@@ -45,7 +40,10 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Security(get
     if user.refresh_token != token:
         await user_repository.update_token(user, None, db)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect refresh token")
+    return await create_and_update_tokens(user, db)
 
+
+async def create_and_update_tokens(user, db):
     new_access_token = await auth_service.create_access_token(data={'sub': user.email})
     new_refresh_token = await auth_service.create_refresh_token(data={'sub': user.email})
     await user_repository.update_token(user, new_refresh_token, db)
