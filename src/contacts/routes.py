@@ -1,3 +1,5 @@
+from os import access
+
 from anyio import get_current_task
 from fastapi import HTTPException, Depends, status, Query, APIRouter
 from sqlalchemy.exc import IntegrityError
@@ -7,9 +9,12 @@ from database.db import get_db
 from src.contacts import repository as repo_contacts
 from src.contacts.schemas import ContactSchema, ContactResponseSchema, ContactUpdateSchema
 from src.services.auth import auth_service
+from src.services.roles import RoleChecker
 from src.users.models import User
+from src.users.schemas import RoleEnum
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
+access_to_all_routes = RoleChecker([RoleEnum.ADMIN, RoleEnum.USER])
 
 
 @router.get('/', response_model=list[ContactResponseSchema])
@@ -25,13 +30,11 @@ async def get_contacts_upcoming_birthday(
     contacts = await repo_contacts.get_contacts(limit, offset, days_to_birthday, email, fullname, db, user)
     return contacts
 
-@router.get('/all', response_model=list[ContactResponseSchema])
-async def get_contacts_upcoming_birthday(
+
+@router.get('/all', response_model=list[ContactResponseSchema], dependencies=[Depends(access_to_all_routes)])
+async def get_all_contacts(
         limit: int = Query(10, ge=10, le=100),
         offset: int = Query(None, ge=0),
-        days_to_birthday: int = Query(None, ge=0, le=365, description='None - for disable filter by birthday'),
-        email: str = Query(None, description='Full or part of an email'),
-        fullname: str = Query(None, description='Full or part of a name'),
         db: AsyncSession = Depends(get_db),
         user: User = Depends(auth_service.get_current_user),
 ):
@@ -51,7 +54,6 @@ async def get_contact(contact_id: int, db: AsyncSession = Depends(get_db),
 @router.post('/', response_model=ContactResponseSchema, status_code=status.HTTP_201_CREATED)
 async def create_contact(body: ContactSchema, db: AsyncSession = Depends(get_db),
                          user: User = Depends(auth_service.get_current_user), ):
-
     try:
         contact = await repo_contacts.create_contact(body, db, user)
         return contact

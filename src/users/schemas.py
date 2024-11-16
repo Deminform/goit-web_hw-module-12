@@ -1,6 +1,12 @@
-from datetime import date
+import enum
 
 from pydantic import BaseModel, Field, EmailStr
+
+
+class RoleEnum(enum.Enum):
+    USER = 'user'
+    ADMIN = 'admin'
+    GUEST = 'guest'
 
 
 class UserSchema(BaseModel):

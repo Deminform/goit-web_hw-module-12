@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from libgravatar import Gravatar
 
 from database.db import get_db
-from src.users.models import User
-from src.users.schemas import UserSchema
+from src.users.models import User, Role
+from src.users.schemas import UserSchema, RoleEnum
 
 
 async def get_users_by_email(email: str, db: AsyncSession = Depends(get_db())):
@@ -15,6 +15,10 @@ async def get_users_by_email(email: str, db: AsyncSession = Depends(get_db())):
     return user
 
 async def create_user(body: UserSchema, db: AsyncSession = Depends(get_db())):
+    query = select(Role.id).where(Role.name == RoleEnum.USER)
+    result = await db.execute(query)
+    user_role_id = result.scalar_one_or_none()
+
     avatar = None
     try:
         g = Gravatar(body.email)
@@ -22,7 +26,7 @@ async def create_user(body: UserSchema, db: AsyncSession = Depends(get_db())):
     except Exception as e:
         print(e)
 
-    new_user = User(**body.model_dump(), avatar=avatar)
+    new_user = User(**body.model_dump(), avatar=avatar, role_id=user_role_id)
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
