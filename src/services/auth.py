@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
 
-from conf.config import SECRET_KEY, ALGORITHM
+from conf.config import SECRET_KEY, ALGORITHM, TOKEN_LIFETIME, REFRESH_TOKEN_LIFETIME
 from database.db import get_db
 from src.users import repository as user_repository
 
@@ -31,7 +31,7 @@ class Auth:
         if expires_delta:
             expire = datetime.now(timezone.utc) + timedelta(seconds=expires_delta)
         else:
-            expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+            expire = datetime.now(timezone.utc) + timedelta(minutes=TOKEN_LIFETIME)
         to_encode.update({'iat': datetime.now(timezone.utc), 'exp': expire, 'scope': 'access_token'})
         encoded_access_token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_access_token
@@ -44,7 +44,7 @@ class Auth:
         if expires_delta:
             expire = datetime.now(timezone.utc) + timedelta(seconds=expires_delta)
         else:
-            expire = datetime.now(timezone.utc) + timedelta(days=7)
+            expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_LIFETIME)
         to_encode.update({'iat': datetime.now(timezone.utc), 'exp': expire, 'scope': 'refresh_token'})
         encoded_refresh_token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_refresh_token

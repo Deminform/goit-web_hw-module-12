@@ -14,6 +14,10 @@ port = os.getenv("PORT")
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 
+TOKEN_LIFETIME = 15
+REFRESH_TOKEN_LIFETIME = 7
+
+
 class Base(DeclarativeBase):
     pass
 
