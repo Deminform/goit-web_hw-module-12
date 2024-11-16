@@ -12,7 +12,7 @@ class User(Base):
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     avatar: Mapped[str] = mapped_column(String(255), nullable=True)
     role_id: Mapped[int] = mapped_column(Integer, ForeignKey('roles.id'), nullable=True)  # TODO Change to 'nullable=False'
-    role: Mapped['Role'] = relationship('Role', backref='users')
+    role: Mapped['Role'] = relationship('Role', backref='users', lazy='joined')
 
     refresh_token: Mapped[str] = mapped_column(String(255), nullable=True)
     created_at: Mapped[DateTime] = mapped_column('created_at', DateTime, default=func.now())

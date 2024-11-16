@@ -32,12 +32,8 @@ async def get_contacts_upcoming_birthday(
 
 
 @router.get('/all', response_model=list[ContactResponseSchema], dependencies=[Depends(access_to_all_routes)])
-async def get_all_contacts(
-        limit: int = Query(10, ge=10, le=100),
-        offset: int = Query(None, ge=0),
-        db: AsyncSession = Depends(get_db),
-        user: User = Depends(auth_service.get_current_user),
-):
+async def get_all_contacts(limit: int = Query(10, ge=10, le=100), offset: int = Query(None, ge=0),
+                           db: AsyncSession = Depends(get_db), user: User = Depends(auth_service.get_current_user)):
     contacts = await repo_contacts.get_all_contacts(limit, offset, db)
     return contacts
 
