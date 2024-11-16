@@ -4,11 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.middleware.cors import CORSMiddleware
 
 from database.db import get_db
-from src.contacts import routes as contacts_routes
+from src.contacts import routes_users as contacts_routes
+from src.contacts import routes_admin as contacts_admin_routes
 from src.users import routes as users_routes
 
 app = FastAPI()
 app.include_router(users_routes.router, prefix="/api")
+app.include_router(contacts_admin_routes.router, prefix="/api")
 app.include_router(contacts_routes.router, prefix="/api")
 
 app.add_middleware(

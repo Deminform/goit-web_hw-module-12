@@ -1,6 +1,3 @@
-from os import access
-
-from anyio import get_current_task
 from fastapi import HTTPException, Depends, status, Query, APIRouter
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,16 +6,13 @@ from database.db import get_db
 from src.contacts import repository as repo_contacts
 from src.contacts.schemas import ContactSchema, ContactResponseSchema, ContactUpdateSchema
 from src.services.auth import auth_service
-from src.services.roles import RoleChecker
 from src.users.models import User
-from src.users.schemas import RoleEnum
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
-access_to_all_routes = RoleChecker([RoleEnum.ADMIN, RoleEnum.USER])
 
 
 @router.get('/', response_model=list[ContactResponseSchema])
-async def get_contacts_upcoming_birthday(
+async def get_contacts_by_filters(
         limit: int = Query(10, ge=10, le=100),
         offset: int = Query(None, ge=0),
         days_to_birthday: int = Query(None, ge=0, le=365, description='None - for disable filter by birthday'),
@@ -28,13 +22,6 @@ async def get_contacts_upcoming_birthday(
         user: User = Depends(auth_service.get_current_user),
 ):
     contacts = await repo_contacts.get_contacts(limit, offset, days_to_birthday, email, fullname, db, user)
-    return contacts
-
-
-@router.get('/all', response_model=list[ContactResponseSchema], dependencies=[Depends(access_to_all_routes)])
-async def get_all_contacts(limit: int = Query(10, ge=10, le=100), offset: int = Query(None, ge=0),
-                           db: AsyncSession = Depends(get_db), user: User = Depends(auth_service.get_current_user)):
-    contacts = await repo_contacts.get_all_contacts(limit, offset, db)
     return contacts
 
 

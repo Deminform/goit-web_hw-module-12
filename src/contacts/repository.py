@@ -8,8 +8,7 @@ from src.contacts.schemas import ContactSchema, ContactUpdateSchema
 from src.users.models import User
 
 
-async def get_contacts(limit: int, skip: int, days: int, email, fullname, db: AsyncSession, user: User):
-    stmt = select(Contact).filter_by(user=user)
+async def apply_contact_filters(stmt, limit: int, skip: int, days: int, email, fullname, db: AsyncSession):
     if fullname:
         stmt = await get_contact_by_name(stmt, fullname)
     if email:
@@ -18,22 +17,29 @@ async def get_contacts(limit: int, skip: int, days: int, email, fullname, db: As
         stmt = await get_contact_for_upcoming_birthday(stmt, days)
 
     stmt = stmt.offset(skip).limit(limit)
-
     contacts = await db.execute(stmt)
     return contacts.scalars().all()
+
+
+async def get_all_contacts(limit: int, skip: int, days: int, email, fullname, db: AsyncSession, user_id: int):
+    if user_id:
+        stmt = select(Contact).filter_by(user_id=user_id)
+    else:
+        stmt = select(Contact)
+    result = await apply_contact_filters(stmt, limit, skip, days, email, fullname, db)
+    return result
+
+
+async def get_contacts(limit: int, skip: int, days: int, email, fullname, db: AsyncSession, user: User):
+    stmt = select(Contact).filter_by(user=user)
+    result = await apply_contact_filters(stmt, limit, skip, days, email, fullname, db)
+    return result
 
 
 async def get_contact_by_id(contact_id: int, db: AsyncSession, user: User):
     contact = select(Contact).filter_by(id=contact_id, user=user)
     contact = await db.execute(contact)
     return contact.scalar_one_or_none()
-
-
-async def get_all_contacts(limit: int, skip: int, db: AsyncSession):
-    contacts = select(Contact).offset(skip).limit(limit)
-
-    contact = await db.execute(contacts)
-    return contact.scalars().all()
 
 
 async def create_contact(body: ContactSchema, db: AsyncSession, user: User):
