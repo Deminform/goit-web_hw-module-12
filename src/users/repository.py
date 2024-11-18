@@ -16,6 +16,9 @@ async def get_users_by_email(email: str, db: AsyncSession = Depends(get_db())):
 
 async def create_user(body: UserSchema, db: AsyncSession = Depends(get_db())):
     query = select(Role.id).where(Role.name == RoleEnum.USER.value)
+    print(f' ---------------------------------------------------------------------------------------------------------------------')
+    print(f' ----------------------------------------------- {RoleEnum.USER.value} -----------------------------------------------')
+    print(f' ---------------------------------------------------------------------------------------------------------------------')
     result = await db.execute(query)
     user_role_id = result.scalar_one_or_none()
 
@@ -35,4 +38,10 @@ async def create_user(body: UserSchema, db: AsyncSession = Depends(get_db())):
 
 async def update_token(user: User, token: str | None, db: AsyncSession):
     user.refresh_token = token
+    await db.commit()
+
+
+async def verify_email(email: str, db: AsyncSession = Depends(get_db())):
+    user = await get_users_by_email(email, db)
+    user.confirmed = True
     await db.commit()

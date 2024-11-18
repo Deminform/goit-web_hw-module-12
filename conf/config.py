@@ -1,29 +1,54 @@
-import os
-from dotenv import load_dotenv
-
 from sqlalchemy.orm import DeclarativeBase
-
-
-load_dotenv()
-user = os.getenv("USER")
-password = os.getenv("PASSWORD")
-dbname = os.getenv("DBNAME")
-host = os.getenv("HOST")
-port = os.getenv("PORT")
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = "HS256"
-
-TOKEN_LIFETIME = 15
-REFRESH_TOKEN_LIFETIME = 7
+from pydantic import field_validator, EmailStr
+from pydantic_settings import BaseSettings
 
 
 class Base(DeclarativeBase):
     pass
 
-class Config:
-    DB_URL = f'postgresql+asyncpg://{user}:{password}@{host}:{port}/{dbname}'
+class Settings(BaseSettings):
+    # Database settings -----------------------------------------------------------------------------
+    POSTGRES_USER: str = 'username'
+    POSTGRES_PASSWORD: str = '9876543210'
+    POSTGRES_DBNAME: str = 'database_name'
+    POSTGRES_HOST: str = 'localhost'
+    POSTGRES_PORT: str = '5432'
 
-db_config = Config
+    DB_URL: str = 'postgresql+asyncpg://postgres@localhost:5432/database_name'
+
+    # Mail settings ----------------------------------------------------------------------------------
+    MAIL_USERNAME: EmailStr = 'email@example.com'
+    MAIL_FROM: str = MAIL_USERNAME
+    MAIL_PASSWORD: str = '9876543210'
+    MAIL_SERVER: str = 'mail.example.com'
+    MAIL_SMTP_PORT: str = '993'
+    MAIL_IMAP_PORT: str = '465'
+    VERIFY_EMAIL_TOKEN_LIFETIME: int = 1  # Days
 
 
+    # JWT Key --------------------------------------------------------------------------------------
+    JWT_SECRET_KEY: str = '0123a654b987c'
+    ALGORITHM: str = 'HS256'
+    TOKEN_LIFETIME: int = 15  # Minutes
+    REFRESH_TOKEN_LIFETIME: int = 7  # Days
+
+    # Redis --------------------------------------------------------------------------------------
+    REDIS_DOMAIN: str = 'localhost'
+    REDIS_PORT: str = '6379'
+    REDIS_PASSWORD: str = '9876543210'
+
+
+    @field_validator('ALGORITHM')
+    @classmethod
+    def validate_algorithm(cls, v):
+        if v not in ['HS256', 'HS512']:
+            raise ValueError('Algorithm must be HS256 or HS512.')
+        return v
+
+    class Config:
+        # env_file = ConfigDict(extra='ignore', env_file='.env', env_file_encoding='utf-8')  # noqa
+        extra = 'ignore'
+        env_file = '.env'
+        env_file_encoding = 'utf-8'
+
+app_config = Settings()

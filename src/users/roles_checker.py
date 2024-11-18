@@ -1,7 +1,7 @@
 from fastapi.params import Depends
 from fastapi import status, HTTPException, Request
 
-from src.services.auth import auth_service
+from src.services.auth.jwt_auth import auth_service
 from src.users.models import User
 from src.users.schemas import RoleEnum
 

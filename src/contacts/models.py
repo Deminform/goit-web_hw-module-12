@@ -19,7 +19,7 @@ class Contact(Base):
     created_at: Mapped[DateTime] = mapped_column('created_at', DateTime, nullable=True, default=func.now())
     updated_at: Mapped[DateTime] = mapped_column('updated_at', DateTime, nullable=True, default=func.now(),
                                                  onupdate=func.now())
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), nullable=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
     user: Mapped['User'] = relationship('User', backref='contacts', lazy='joined')
 
     @hybrid_property

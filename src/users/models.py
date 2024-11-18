@@ -1,4 +1,4 @@
-from sqlalchemy import String, DateTime, func, Integer, ForeignKey
+from sqlalchemy import String, DateTime, func, Integer, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from conf.config import Base
@@ -11,8 +11,9 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(150), nullable=False, unique=True, index=True)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     avatar: Mapped[str] = mapped_column(String(255), nullable=True)
-    role_id: Mapped[int] = mapped_column(Integer, ForeignKey('roles.id'), nullable=True)  # TODO Change to 'nullable=False'
+    role_id: Mapped[int] = mapped_column(Integer, ForeignKey('roles.id'), nullable=False)
     role: Mapped['Role'] = relationship('Role', backref='users', lazy='joined')
+    confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
 
     refresh_token: Mapped[str] = mapped_column(String(255), nullable=True)
     created_at: Mapped[DateTime] = mapped_column('created_at', DateTime, default=func.now())
