@@ -1,5 +1,6 @@
 from fastapi import HTTPException, Depends, status, APIRouter, Security, BackgroundTasks, Request
 from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredentials, HTTPBearer
+from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.db import get_db
@@ -59,7 +60,7 @@ async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
     return {'message': 'Email confirmed'}
 
 
-@router.post('/request_verify_email')
+@router.post('/request_verify_email', dependencies=[Depends(RateLimiter(times=1, seconds=60))])
 async def request_verify_email(body: RequestEmail, bt: BackgroundTasks, request: Request,
                                db: AsyncSession = Depends(get_db)):
     user = await user_repository.get_users_by_email(body.email, db)
