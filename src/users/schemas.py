@@ -4,9 +4,9 @@ from pydantic import BaseModel, Field, EmailStr
 
 
 class RoleEnum(enum.Enum):
-    USER = 'user'
-    ADMIN = 'admin'
-    GUEST = 'guest'
+    USER = "user"
+    ADMIN = "admin"
+    GUEST = "guest"
 
 
 class UserSchema(BaseModel):
@@ -21,14 +21,15 @@ class UserResponseSchema(BaseModel):
     email: str
     avatar: str
 
-
     class Config:
         from_attributes = True
+
 
 class TokenSchema(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
 
 class RequestEmail(BaseModel):
     email: EmailStr

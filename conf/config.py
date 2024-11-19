@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     REDIS_PORT: str = '6379'
     REDIS_PASSWORD: str | None = None
 
+    # Cloudinary --------------------------------------------------------------------------------------
+    CLOUDINARY_FOLDER: str = 'first_app'
+    CLOUDINARY_NAME: str = 'cloud_name'
+    CLOUDINARY_API_KEY: int = 123465790
+    CLOUDINARY_API_SECRET: str = 'secret'
+    CLOUDINARY_URL: str = f'cloudinary://{CLOUDINARY_API_KEY}:{CLOUDINARY_API_SECRET}@{CLOUDINARY_NAME}'
+
 
     @field_validator('ALGORITHM')
     @classmethod

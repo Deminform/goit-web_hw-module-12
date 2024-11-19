@@ -1,78 +1,48 @@
-from fastapi import HTTPException, Depends, status, APIRouter, Security, BackgroundTasks, Request
-from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredentials, HTTPBearer
+import uuid
+from pathlib import Path
+
+import cloudinary
+import cloudinary.uploader
+from fastapi import Depends, APIRouter, UploadFile, File
 from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.db import get_db
-from src.services.auth.verify_email import send_email
 from src.users import repository as user_repository
-from src.users.schemas import UserSchema, UserResponseSchema, TokenSchema, RequestEmail
+from conf.config import app_config
+from database.db import get_db
+from src.users.models import User
+from src.users.schemas import UserResponseSchema
 from src.services.auth.jwt_auth import auth_service
 
-router = APIRouter(prefix="/auth", tags=["auth"])
-get_refresh_token = HTTPBearer()
+router = APIRouter(prefix="/users", tags=["users"])
+cloudinary.config(
+    cloud_name=app_config.CLOUDINARY_NAME,
+    api_key=app_config.CLOUDINARY_API_KEY,
+    api_secret=app_config.CLOUDINARY_API_SECRET,
+    secure=True,
+)
+
+@router.get('/me', response_model=UserResponseSchema, dependencies=[Depends(RateLimiter(times=10, seconds=60))])
+async def get_current_user(user: User = Depends(auth_service.get_current_user)):
+    return user
 
 
-@router.post("/signup", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)
-async def signup(body: UserSchema, bt: BackgroundTasks, request: Request, db: AsyncSession = Depends(get_db)):
-    exist_user = await user_repository.get_users_by_email(body.email, db)
-    if exist_user:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account already exists")
-    body.password = auth_service.get_password_hash(body.password)
-    new_user = await user_repository.create_user(body, db)
-    bt.add_task(send_email, new_user.email, new_user.username, str(request.base_url))
-    return new_user
+@router.patch('/avatar', response_model=UserResponseSchema, dependencies=[Depends(RateLimiter(times=10, seconds=60))])
+async def get_current_user(file: UploadFile = File(),
+                           user: User = Depends(auth_service.get_current_user),
+                           db: AsyncSession = Depends(get_db)):
+    ext = Path(file.filename).suffix.lower()
+    unique_filename = uuid.uuid4().hex
+    res = cloudinary.uploader.upload(file.file, public_id=unique_filename, overwrite=True, folder=app_config.CLOUDINARY_FOLDER)
+    full_public_id = res.get('public_id')
+    res_url = cloudinary.CloudinaryImage(full_public_id + ext).build_url(
+        width=200,
+        height=200,
+        crop='fill',
+        version=res.get('version')
+    )
+    user = await user_repository.update_avatar_url(user.email, res_url, db)
+    return user
 
 
-@router.post("/login", response_model=TokenSchema)
-async def login(body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
-    user = await user_repository.get_users_by_email(body.username, db)
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email")
-    if not user.confirmed:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email not confirmed")
-    if not auth_service.verify_password(body.password, user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
-    return await create_and_update_tokens(user, db)
 
-
-@router.get('/refresh_token', response_model=TokenSchema)
-async def refresh_token(credentials: HTTPAuthorizationCredentials = Security(get_refresh_token),
-                        db: AsyncSession = Depends(get_db)):
-    token = credentials.credentials
-    email = await auth_service.decode_refresh_token(token)
-    user = await user_repository.get_users_by_email(email, db)
-    if user.refresh_token != token:
-        await user_repository.update_token(user, None, db)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect refresh token")
-    return await create_and_update_tokens(user, db)
-
-
-@router.get('/verify_email/{token}')
-async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
-    email = await auth_service.get_email_from_token(token)
-    user = await user_repository.get_users_by_email(email, db)
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Verification failed")
-    if user.confirmed:
-        return {'message': 'Email is already confirmed'}
-    await user_repository.verify_email(email, db)
-    return {'message': 'Email confirmed'}
-
-
-@router.post('/request_verify_email', dependencies=[Depends(RateLimiter(times=1, seconds=60))])
-async def request_verify_email(body: RequestEmail, bt: BackgroundTasks, request: Request,
-                               db: AsyncSession = Depends(get_db)):
-    user = await user_repository.get_users_by_email(body.email, db)
-    if user.confirmed:
-        return {'message': 'Email is already confirmed'}
-    if user:
-        bt.add_task(send_email, user.email, user.username, str(request.base_url))
-    return {'message': 'Check your email for confirmation'}
-
-
-async def create_and_update_tokens(user, db):
-    new_access_token = await auth_service.create_access_token(data={'sub': user.email})
-    new_refresh_token = await auth_service.create_refresh_token(data={'sub': user.email})
-    await user_repository.update_token(user, new_refresh_token, db)
-    return {'access_token': new_access_token, 'refresh_token': new_refresh_token, 'token_type': 'bearer'}
