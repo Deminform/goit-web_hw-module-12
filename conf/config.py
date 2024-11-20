@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     REDIS_DOMAIN: str = 'localhost'
     REDIS_PORT: str = '6379'
     REDIS_PASSWORD: str | None = None
+    REDIS_URL: str = 'redis://:${REDIS_PASSWORD}@${REDIS_DOMAIN}:${REDIS_PORT}/0'
 
     # Cloudinary --------------------------------------------------------------------------------------
     CLOUDINARY_FOLDER: str = 'first_app'
@@ -44,6 +45,8 @@ class Settings(BaseSettings):
     CLOUDINARY_API_SECRET: str = 'secret'
     CLOUDINARY_URL: str = f'cloudinary://{CLOUDINARY_API_KEY}:{CLOUDINARY_API_SECRET}@{CLOUDINARY_NAME}'
 
+    # Temporary code --------------------------------------------------------------------------------------
+    TEMP_CODE_LIFETIME: int = 15  # minutes
 
     @field_validator('ALGORITHM')
     @classmethod

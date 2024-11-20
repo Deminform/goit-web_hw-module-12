@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import cast
+
 from fastapi import (
     HTTPException,
     Depends,
@@ -16,9 +19,10 @@ from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.db import get_db
-from src.services.auth.verify_email import send_email
+from src.services.auth.repository import send_verify_email, send_temp_code
+from src.services.temp_code.repository import get_temp_code, create_temp_code, update_temp_code
 from src.users import repository as user_repository
-from src.users.schemas import UserSchema, UserResponseSchema, TokenSchema, RequestEmail
+from src.users.schemas import UserSchema, UserResponseSchema, TokenSchema, RequestEmailSchema, ResetPasswordSchema
 from src.services.auth.jwt_auth import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -41,13 +45,14 @@ async def signup(
         )
     body.password = auth_service.get_password_hash(body.password)
     new_user = await user_repository.create_user(body, db)
-    bt.add_task(send_email, new_user.email, new_user.username, str(request.base_url))
+    bt.add_task(send_verify_email, new_user.email, new_user.username, str(request.base_url))
     return new_user
 
 
 @router.post("/login", response_model=TokenSchema, dependencies=[Depends(RateLimiter(times=5, seconds=60))])
 async def login(
-    body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
+        body: OAuth2PasswordRequestForm = Depends(),
+        db: AsyncSession = Depends(get_db)
 ):
     user = await user_repository.get_users_by_email(body.username, db)
     if user is None:
@@ -86,7 +91,10 @@ async def refresh_token(
 
 
 @router.get("/verify_email/{token}", dependencies=[Depends(RateLimiter(times=3, seconds=60))])
-async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
+async def verify_email(
+        token: str,
+        db: AsyncSession = Depends(get_db)
+):
     email = await auth_service.get_email_from_token(token)
     user = await user_repository.get_users_by_email(email, db)
     if user is None:
@@ -102,7 +110,7 @@ async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
 
 @router.post("/request_verify_email", dependencies=[Depends(RateLimiter(times=1, seconds=60))])
 async def request_verify_email(
-    body: RequestEmail,
+    body: RequestEmailSchema,
     bt: BackgroundTasks,
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -111,8 +119,56 @@ async def request_verify_email(
     if user.confirmed:
         return {"message": "Email is already confirmed"}
     if user:
-        bt.add_task(send_email, user.email, user.username, str(request.base_url))
+        bt.add_task(send_verify_email, user.email, user.username, str(request.base_url))
     return {"message": "Check your email for confirmation"}
+
+
+@router.post("/request_reset_password", dependencies=[Depends(RateLimiter(times=1, minutes=1))])
+async def request_reset_password(
+        body: RequestEmailSchema,
+        bt: BackgroundTasks,
+        request: Request,
+        db: AsyncSession = Depends(get_db)):
+    temp_code = await create_temp_code(body.email, db, description='Request reset password')
+    user = await user_repository.get_users_by_email(body.email, db)
+    if user is None:
+        return {"message": "User not found"}
+    if temp_code:
+        bt.add_task(send_temp_code, user.email, user.username, temp_code.temp_code, str(request.base_url))
+    return {"message": "Check your email for reset password"}
+
+
+@router.patch('/reset_password', dependencies=[Depends(RateLimiter(times=1, seconds=3))])
+async def reset_password(
+        body: ResetPasswordSchema,
+        db: AsyncSession = Depends(get_db)):
+
+    if body.password != body.password_check:
+        return {"message": "Passwords do not match"}
+
+    user = await user_repository.get_users_by_email(body.email, db)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification failed"
+        )
+
+    temp_code = await get_temp_code(body.email, body.temp_code, db)
+    if temp_code.expires_at < datetime.now() or temp_code.used_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Code has expired"
+        )
+    if temp_code is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Code not found"
+        )
+
+    new_password = auth_service.get_password_hash(body.password)
+    await user_repository.update_user_password(body.email, new_password, db)
+    await update_temp_code(body.email, body.temp_code, db)
+    return {"message": "Password updated successfully"}
 
 
 async def create_and_update_tokens(user, db):
@@ -126,3 +182,5 @@ async def create_and_update_tokens(user, db):
         "refresh_token": new_refresh_token,
         "token_type": "bearer",
     }
+
+

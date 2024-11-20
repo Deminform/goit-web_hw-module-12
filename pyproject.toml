@@ -26,6 +26,10 @@ redis = "^5.2.0"
 fastapi-limiter = "^0.1.6"
 jinja2 = "^3.1.4"
 cloudinary = "^1.41.0"
+aioredis = "^2.0.1"
+fastapi-cache2 = "^0.2.2"
+flake8 = "^7.1.1"
+flake8-async = "^24.11.3"
 
 
 [build-system]

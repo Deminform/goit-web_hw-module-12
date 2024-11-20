@@ -14,7 +14,6 @@ class User(Base):
     role_id: Mapped[int] = mapped_column(Integer, ForeignKey('roles.id'), nullable=False)
     role: Mapped['Role'] = relationship('Role', backref='users', lazy='joined')
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
-
     refresh_token: Mapped[str] = mapped_column(String(255), nullable=True)
     created_at: Mapped[DateTime] = mapped_column('created_at', DateTime, default=func.now())
     updated_at: Mapped[DateTime] = mapped_column('updated_at', DateTime, default=func.now(), onupdate=func.now())

@@ -1,5 +1,6 @@
+import logging
+import re
 from contextlib import asynccontextmanager
-from ipaddress import ip_address
 from typing import Callable
 
 from pathlib import Path
@@ -19,25 +20,38 @@ from src.services.auth import routes as auth_routes
 from src.users import routes as users_routes
 from conf.config import app_config
 
-banned_ips = []
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("uvicorn.error")
+
+user_agent_ban_list = []
 templates = Jinja2Templates(directory="src/templates")
-rootdir = Path(__file__).parent
+BASE_DIR = Path('.')
 
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
-    r = redis.Redis(
-        host=app_config.REDIS_DOMAIN,
-        port=app_config.REDIS_PORT,
-        decode_responses=True,
-        password=app_config.REDIS_PASSWORD,
-        db=0,
-    )
-    await FastAPILimiter.init(r)
-
-    yield
-
-    await r.close()
-
+    try:
+        r = redis.Redis(
+            host=app_config.REDIS_DOMAIN,
+            port=app_config.REDIS_PORT,
+            decode_responses=True,
+            password=app_config.REDIS_PASSWORD,
+            db=0,
+        )
+        await FastAPILimiter.init(r)
+        logger.info("FastAPILimiter is successfully connected to Redis..")
+        yield
+    except Exception as e:
+        logger.error(f"Initialization error FastAPILimiter: {e}")
+        raise
+    finally:
+        await r.close()
+        logger.info("Connection to Redis closed.")
 
 app = FastAPI(lifespan=lifespan)
 
@@ -50,7 +64,7 @@ app.add_middleware(
 )
 
 
-app.mount("/static", StaticFiles(directory="src/static"), name="static")
+app.mount('/static', StaticFiles(directory=BASE_DIR / 'src' / 'static'), name="static")
 app.include_router(auth_routes.router, prefix="/api")
 app.include_router(users_routes.router, prefix="/api")
 app.include_router(contacts_admin_routes.router, prefix="/api")
@@ -60,14 +74,35 @@ app.include_router(routes_email_status.router, prefix="/api")
 
 
 @app.middleware('http')
-async def black_list(request: Request, call_next: Callable):
-    ip = ip_address(request.client.host)
-    if ip in banned_ips:
-        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={'detail': 'You are banned'})
-    response = await call_next(request)
-    return response
+async def user_agent_ban_middleware(request: Request, call_next: Callable):
+    user_agent = request.headers.get('User-Agent', '')
+    logger.info(f"A request has been received to {request.url} с User-Agent: {user_agent}")
+    for ban_pattern in user_agent_ban_list:
+        if re.search(ban_pattern, user_agent):
+            logger.warning(f"Access Denied for User-Agent: {user_agent}")
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={'detail': 'You are banned'}
+            )
+    try:
+        response = await call_next(request)
+        logger.info(f"The request to {request.url} has been successfully processed with status {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Error processing the request to {request.url}: {e}")
+        raise
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global error while processing the request to {request.url}: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal Server Error"}
+    )
 
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
+    logger.info(f"Home page request received: {request.url}")
     return templates.TemplateResponse('index.html', {'request': request, 'page_title': 'Python Test Landing Page'})

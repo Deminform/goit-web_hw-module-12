@@ -11,6 +11,7 @@ from conf.config import app_config
 from conf.config import Base
 from src.contacts.models import Contact
 from src.users.models import User
+from src.services.temp_code.model import TemporaryCode
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

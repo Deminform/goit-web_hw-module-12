@@ -1,16 +1,21 @@
 import contextlib
+import logging
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
 from conf.config import app_config
 
+logger = logging.getLogger("uvicorn.error")
 
 class DatabaseSessionManager:
     def __init__(self, url: str):
-        self._engine: AsyncEngine | None = create_async_engine(url)
-        self._session_maker: async_sessionmaker = async_sessionmaker(autocommit=False, autoflush=False,
-                                                                     bind=self._engine)
+        self._engine: AsyncEngine | None = create_async_engine(url, echo=True)
+        self._session_maker: async_sessionmaker = async_sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=self._engine
+        )
 
     @contextlib.asynccontextmanager
     async def session(self):
@@ -20,8 +25,9 @@ class DatabaseSessionManager:
         try:
             yield session
         except SQLAlchemyError as error:
-            print(error)
+            logger.error(f"Error when working with the database: {error}")
             await session.rollback()
+            raise
         finally:
             await session.close()
 
