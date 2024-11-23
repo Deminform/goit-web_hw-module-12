@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.services.temp_code.model import TemporaryCode
 
 
-async def get_temp_code(email: str, temp_code: str, db: AsyncSession)-> TemporaryCode:
+async def get_temp_code(email: str, temp_code: str, db: AsyncSession) -> TemporaryCode:
     stmt = select(TemporaryCode).where(TemporaryCode.temp_code == temp_code, TemporaryCode.user_email == email)
     result = await db.execute(stmt)
     result = result.scalar_one_or_none()

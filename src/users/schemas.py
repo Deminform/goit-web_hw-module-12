@@ -37,7 +37,6 @@ class RequestEmailSchema(BaseModel):
 
 
 class ResetPasswordSchema(BaseModel):
-    email: EmailStr
     password: str = Field(min_length=6, max_length=8)
     password_check: str = Field(min_length=6, max_length=8, description='Repeat password')
     temp_code: str = Field(pattern=r'^\d{6}$', description='Temporary code')

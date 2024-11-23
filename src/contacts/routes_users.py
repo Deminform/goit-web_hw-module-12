@@ -62,7 +62,7 @@ async def create_contact(
             status_code=status.HTTP_409_CONFLICT, detail="Contact already exists.")
 
 
-@router.put("/{contact_id}", dependencies=[Depends(RateLimiter(times=4, seconds=60))])
+@router.put("/{contact_id}", response_model=ContactResponseSchema, dependencies=[Depends(RateLimiter(times=4, seconds=60))])
 async def update_contact(
     body: ContactUpdateSchema,
     contact_id: int,

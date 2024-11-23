@@ -21,10 +21,20 @@ class Auth:
     def get_password_hash(self, password: str):
         return self.pwd_context.hash(password)
 
-    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+    oauth2_verify_email_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+    oauth2_reset_password_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/reset_password")
 
+    @staticmethod
+    def create_reset_password_token(email: str, expires_delta: Optional[float] = None):
+        to_encode = {"sub": email}
+        if expires_delta:
+            expire = datetime.now(timezone.utc) + timedelta(seconds=expires_delta)
+        else:
+            expire = datetime.now(timezone.utc) + timedelta(minutes=app_config.TOKEN_LIFETIME)
+        to_encode.update({"iat": datetime.now(timezone.utc), "exp": expire, "scope": "reset_password"})
+        encoded_token = jwt.encode(to_encode, app_config.JWT_SECRET_KEY, algorithm=app_config.ALGORITHM)
+        return encoded_token
 
-    # define a function to generate a new access token
     @staticmethod
     async def create_access_token(data: dict, expires_delta: Optional[float] = None):
         to_encode = data.copy()
@@ -36,8 +46,6 @@ class Auth:
         encoded_access_token = jwt.encode(to_encode, app_config.JWT_SECRET_KEY, algorithm=app_config.ALGORITHM)
         return encoded_access_token
 
-
-    # define a function to refresh a token
     @staticmethod
     async def create_refresh_token(data: dict, expires_delta: Optional[float] = None):
         to_encode = data.copy()
@@ -61,7 +69,7 @@ class Auth:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate credentials')
 
     @staticmethod
-    async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    async def get_current_user(token: str = Depends(oauth2_verify_email_scheme), db: AsyncSession = Depends(get_db)):
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials (inner)",
@@ -80,11 +88,10 @@ class Auth:
         except JWTError as e:
             raise credentials_exception
 
-        user = await user_repository.get_users_by_email(email, db)
+        user = await user_repository.get_user_by_email(email, db)
         if user is None:
             raise credentials_exception
         return user
-
 
     @staticmethod
     def create_email_token(data: dict):
@@ -102,7 +109,8 @@ class Auth:
             return email
         except JWTError as err:
             print(err)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail='Invalid email verification token')
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                detail='Invalid email verification token')
 
 
 auth_service = Auth()

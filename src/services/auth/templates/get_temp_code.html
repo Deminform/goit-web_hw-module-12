@@ -265,7 +265,8 @@
                                                                                    width="100%" style="width:100%;">
                                                                                 <tr>
                                                                                     <td class="t7">
-                                                                                        <h1 class="t6" style="margin:0;Margin:0;font-family:Inter,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:28px;font-weight:600;font-style:normal;font-size:24px;text-decoration:none;text-transform:none;letter-spacing:-1.2px;direction:ltr;color:#111111;text-align:center;mso-line-height-rule:exactly;mso-text-raise:1px;">
+                                                                                        <h1 class="t6"
+                                                                                            style="margin:0;Margin:0;font-family:Inter,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:28px;font-weight:600;font-style:normal;font-size:24px;text-decoration:none;text-transform:none;letter-spacing:-1.2px;direction:ltr;color:#111111;text-align:center;mso-line-height-rule:exactly;mso-text-raise:1px;">
                                                                                             Hello {{username}}
                                                                                         </h1>
                                                                                     </td>
@@ -303,7 +304,10 @@
                                                                                 <tr>
                                                                                     <td class="t13"><p class="t11"
                                                                                                        style="margin:0;Margin:0;font-family:Inter,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:15px;text-decoration:none;text-transform:none;letter-spacing:-0.6px;direction:ltr;color:#424040;text-align:center;mso-line-height-rule:exactly;mso-text-raise:2px;">
-                                                                                        We have received a request from you to reset your password. Use the code below to reset your password.</p></td>
+                                                                                        We have received a request from
+                                                                                        you to reset your password. Use
+                                                                                        the code below to reset your
+                                                                                        password.</p></td>
                                                                                 </tr>
                                                                             </table>
                                                                         </td>
@@ -325,21 +329,37 @@
                                                                        cellspacing="0"
                                                                        style="Margin-left:auto;Margin-right:auto;">
                                                                     <tr>
+                                                                        <td class="t7">
+                                                                            <h1 class="t6"
+                                                                                style="margin-bottom: 20px;font-family:Inter,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:28px;font-weight:400;font-style:normal;font-size:34px;text-decoration:none;text-transform:none;letter-spacing:1px;direction:ltr;color:#111111;text-align:center;mso-line-height-rule:exactly;mso-text-raise:1px;">
+                                                                                {{temp_code}}</h1>
+                                                                        </td>
+
+                                                                    </tr>
+                                                                    <tr>
                                                                         <!--[if mso]>
                                                                         <td width="154" class="t21"
                                                                             style="background-color:#0057FF;overflow:hidden;width:154px;border-radius:8px 8px 8px 8px;">
                                                                         <![endif]-->
                                                                         <!--[if !mso]>-->
-                                                                        <td class="t9" style="width:318px;">
+                                                                        <td class="t21"
+                                                                            style="background-color:#0057FF;overflow:hidden;width:154px;border-radius:8px 8px 8px 8px;">
                                                                             <!--<![endif]-->
-                                                                            <table class="t8" role="presentation"
+                                                                            <table class="t20" role="presentation"
                                                                                    cellpadding="0" cellspacing="0"
                                                                                    width="100%" style="width:100%;">
+
+
                                                                                 <tr>
-                                                                                    <td  class="t7">
-                                                                                        <h1 class="t6" style="margin:0;Margin:0;font-family:Inter,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:28px;font-weight:400;font-style:normal;font-size:34px;text-decoration:none;text-transform:none;letter-spacing:1px;direction:ltr;color:#111111;text-align:center;mso-line-height-rule:exactly;mso-text-raise:1px;">{{temp_code}}</h1>
-                                                                                    </td>
+                                                                                    <td class="t19"
+                                                                                        style="text-align:center;line-height:40px;mso-line-height-rule:exactly;mso-text-raise:8px;">
+                                                                                        <a class="t17"
+                                                                                           href="{{ host }}api/auth/reset_password/{{ token }}"
+                                                                                           style="display:block;margin:0;Margin:0;font-family:Inter,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:40px;font-weight:700;font-style:normal;font-size:15px;text-decoration:none;letter-spacing:-0.5px;direction:ltr;color:#FFFFFF;text-align:center;mso-line-height-rule:exactly;mso-text-raise:8px;"
+                                                                                           target="_blank">Reset my password</a></td>
                                                                                 </tr>
+
+
                                                                             </table>
                                                                         </td>
                                                                     </tr>
@@ -350,8 +370,9 @@
                                                             <td>
                                                                 <div class="t24"
                                                                      style="mso-line-height-rule:exactly;mso-line-height-alt:40px;line-height:40px;font-size:1px;display:block;">
-                                                                    &nbsp;&nbsp;<p class="t23" style="margin:0;Margin:0;font-family:Inter,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.6px;direction:ltr;color:#424040;text-align:center;mso-line-height-rule:exactly;mso-text-raise:2px;">
-                                                                                            Expires in {{expires_at}} minutes</p>
+                                                                    &nbsp;&nbsp;<p class="t23"
+                                                                                   style="margin:0;Margin:0;font-family:Inter,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.6px;direction:ltr;color:#424040;text-align:center;mso-line-height-rule:exactly;mso-text-raise:2px;">
+                                                                    Expires in {{expires_at}} minutes</p>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -373,7 +394,10 @@
                                                                                    width="100%" style="width:100%;">
                                                                                 <tr>
                                                                                     <td class="t25">
-                                                                                        <p class="t23" style="margin:0;Margin:0;font-family:Inter,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.6px;direction:ltr;color:#424040;text-align:center;mso-line-height-rule:exactly;mso-text-raise:2px;">If you received this email in error, please ignore it.
+                                                                                        <p class="t23"
+                                                                                           style="margin:0;Margin:0;font-family:Inter,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.6px;direction:ltr;color:#424040;text-align:center;mso-line-height-rule:exactly;mso-text-raise:2px;">
+                                                                                            If you received this email
+                                                                                            in error, please ignore it.
 
                                                                                         </p>
                                                                                     </td>

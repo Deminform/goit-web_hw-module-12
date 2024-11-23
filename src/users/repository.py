@@ -8,7 +8,7 @@ from src.users.models import User, Role
 from src.users.schemas import UserSchema, RoleEnum
 
 
-async def get_users_by_email(email: str, db: AsyncSession) -> User:
+async def get_user_by_email(email: str, db: AsyncSession) -> User:
     stmt = select(User).filter_by(email=email)
     user = await db.execute(stmt)
     user = user.scalar_one_or_none()
@@ -40,19 +40,19 @@ async def update_token(user: User, token: str | None, db: AsyncSession):
 
 
 async def verify_email(email: str, db: AsyncSession):
-    user = await get_users_by_email(email, db)
+    user = await get_user_by_email(email, db)
     user.confirmed = True
     await db.commit()
 
 
 async def update_user_password(email: str, password: str, db: AsyncSession = Depends(get_db)):
-    user = await get_users_by_email(email, db)
+    user = await get_user_by_email(email, db)
     user.password = password
     await db.commit()
 
 
 async def update_avatar_url(email: str, url: str | None, db: AsyncSession = Depends(get_db)) -> User:
-    user = await get_users_by_email(email, db)
+    user = await get_user_by_email(email, db)
     user.avatar = url
     await db.commit()
     await db.refresh(user)

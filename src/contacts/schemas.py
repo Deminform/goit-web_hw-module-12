@@ -17,8 +17,8 @@ class ContactResponseSchema(ContactSchema):
     created_at: datetime | None
     updated_at: datetime | None
 
-    class Config:
-        from_attributes = True
+    # class Config:
+    #     from_attributes = True
 
 
 class ContactCreateSchema(ContactSchema):

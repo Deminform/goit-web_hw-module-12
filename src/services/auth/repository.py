@@ -22,6 +22,7 @@ conf = ConnectionConfig(
     TEMPLATE_FOLDER=Path(__file__).parent / "templates",
 )
 
+
 async def send_verify_email(email: EmailStr, username: str, host: str):
     try:
         token_verification = auth_service.create_email_token({'sub': email})
@@ -37,17 +38,17 @@ async def send_verify_email(email: EmailStr, username: str, host: str):
         print(err)
 
 
-async def send_temp_code(email: EmailStr, username: str, temp_code: str, host: str):
+async def send_reset_password_email(email: EmailStr, username: str, temp_code: str, host: str):
     try:
+        token_password_reset = auth_service.create_reset_password_token(email)
         message = MessageSchema(
             subject='Password reset',
             recipients=[email],
-            template_body={'host': host, 'username': username, 'temp_code': temp_code, 'expires_at': app_config.TEMP_CODE_LIFETIME},
+            template_body={'host': host, 'username': username, 'temp_code': temp_code,
+                           'expires_at': app_config.TEMP_CODE_LIFETIME, 'token': token_password_reset},
             subtype=MessageType.html
         )
         fm = FastMail(conf)
         await fm.send_message(message, template_name='get_temp_code.html')
     except ConnectionErrors as err:
         print(err)
-
-
