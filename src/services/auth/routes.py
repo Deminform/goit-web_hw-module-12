@@ -10,6 +10,8 @@ from fastapi import (
     BackgroundTasks,
     Request, Form,
 )
+
+from fastapi.responses import JSONResponse
 from fastapi.security import (
     OAuth2PasswordRequestForm,
     HTTPAuthorizationCredentials,
@@ -20,6 +22,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi_limiter.depends import RateLimiter
+from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.db import get_db
@@ -135,6 +138,16 @@ async def request_verify_email(
 @router.get('/reset_password/{token}', response_class=HTMLResponse,
             dependencies=[Depends(RateLimiter(times=1, seconds=3))])
 async def reset_password_page(token: str, request: Request):
+
+    try:
+        await auth_service.is_active(token)
+    except JWTError as e:
+        return templates.TemplateResponse("expired.html",
+                                          {"request": request,
+                                           "page_title": 'Link has expired'
+                                           })
+
+
     email = await auth_service.get_email_from_token(token)
     return templates.TemplateResponse("password-reset.html",
                                       {"request": request,
@@ -150,47 +163,26 @@ async def reset_password(
         request: Request,
         password: str = Form(...),
         password_check: str = Form(...),
-        temp_code: str = Form(...),
+        temp_code: str = Form(..., min_length=6, max_length=6),
         db: AsyncSession = Depends(get_db),
 ):
     email = await auth_service.get_email_from_token(token)
 
+    if not auth_service.is_active(token):
+        return JSONResponse(content={"message": "The code has expired"}, status_code=status.HTTP_400_BAD_REQUEST)
+
     if password != password_check:
-        return templates.TemplateResponse(
-            'password-reset.html',
-            {
-                "page_title": "Reset Password",
-                "email": email,
-                "token": token,
-                "request": request,
-                "error": "Passwords do not match"
-            }
-        )
+        JSONResponse(content={"message": "Password do not match"}, status_code=status.HTTP_400_BAD_REQUEST)
 
     temp_code_obj = await get_temp_code(email, temp_code, db)
-
-    if temp_code_obj is None or temp_code_obj.expires_at < datetime.now() or temp_code_obj.used_at is not None:
-        return templates.TemplateResponse(
-            'password-reset.html',
-            {
-                "page_title": "Reset Password",
-                "email": email,
-                "token": token,
-                "request": request,
-                "error": "Code is invalid or expired"
-            }
-        )
+    if temp_code_obj is None or temp_code_obj.expires_at < datetime.now() or temp_code_obj.used_at:
+        return JSONResponse(content={"message": "Code is invalid or expired"}, status_code=status.HTTP_400_BAD_REQUEST)
 
     new_password = auth_service.get_password_hash(password)
-
     await user_repository.update_user_password(email, new_password, db)
+    await update_temp_code(temp_code_obj, db)
 
-    temp_code_obj.used_at = datetime.now()
-    await db.commit()
-
-    response = RedirectResponse(url="/", status_code=303)
-    response.set_cookie(key="message", value="Password updated successfully", httponly=True)
-    return response
+    return JSONResponse(content={"message": "Password successfully updated"}, status_code=200)
 
 
 @router.post("/request_reset_password", dependencies=[Depends(RateLimiter(times=1, minutes=1))])

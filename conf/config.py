@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     REDIS_DOMAIN: str = 'localhost'
     REDIS_PORT: str = '6379'
     REDIS_PASSWORD: str | None = None
-    REDIS_URL: str = 'redis://:${REDIS_PASSWORD}@${REDIS_DOMAIN}:${REDIS_PORT}/0'
+    REDIS_URL: str = 'redis://${REDIS_USER}:${REDIS_PASSWORD}@${REDIS_DOMAIN}:${REDIS_PORT}/${REDIS_DB}'
 
     # Cloudinary --------------------------------------------------------------------------------------
     CLOUDINARY_FOLDER: str = 'first_app'

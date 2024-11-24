@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +31,7 @@ class Auth:
         if expires_delta:
             expire = datetime.now(timezone.utc) + timedelta(seconds=expires_delta)
         else:
-            expire = datetime.now(timezone.utc) + timedelta(minutes=app_config.TOKEN_LIFETIME)
+            expire = datetime.now(timezone.utc) + timedelta(minutes=app_config.TEMP_CODE_LIFETIME)
         to_encode.update({"iat": datetime.now(timezone.utc), "exp": expire, "scope": "reset_password"})
         encoded_token = jwt.encode(to_encode, app_config.JWT_SECRET_KEY, algorithm=app_config.ALGORITHM)
         return encoded_token
@@ -111,6 +112,10 @@ class Auth:
             print(err)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                                 detail='Invalid email verification token')
+
+    @staticmethod
+    async def is_active(token: str):
+        jwt.decode(token, app_config.JWT_SECRET_KEY, algorithms=[app_config.ALGORITHM])
 
 
 auth_service = Auth()

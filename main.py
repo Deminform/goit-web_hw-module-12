@@ -3,18 +3,20 @@ from contextlib import asynccontextmanager
 from typing import Callable
 
 from pathlib import Path
-import redis.asyncio as redis
+
+from redis import asyncio as aioredis
 from fastapi import FastAPI, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
 from fastapi_limiter import FastAPILimiter
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 
 from src.contacts import routes_users as contacts_routes
 from src.contacts import routes_admin as contacts_admin_routes
-from src.services.health_checker import health_checker
-from src.services.email_status_track import routes_email_status
+from src.services import health_checker, routes_email_status
 from src.services.auth import routes as auth_routes
 from src.users import routes as users_routes
 from conf.config import app_config
@@ -27,20 +29,13 @@ FAVICON_PATH = BASE_DIR / 'src' / 'static' / 'images' / 'favicon.png'
 
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
-    try:
-        r = redis.Redis(
-            host=app_config.REDIS_DOMAIN,
-            port=app_config.REDIS_PORT,
-            decode_responses=True,
-            password=app_config.REDIS_PASSWORD,
-            db=0,
-        )
-        await FastAPILimiter.init(r)
-        yield
-    except Exception as e:
-        raise
-    finally:
-        await r.close()
+    redis = aioredis.from_url(app_config.REDIS_URL, encoding='utf-8')
+    FastAPICache.init(RedisBackend(redis), prefix='fastapi_cache')
+    await FastAPILimiter.init(redis)
+
+    yield
+    # Shutdown events
+    await redis.close()
 
 
 app = FastAPI(lifespan=lifespan)

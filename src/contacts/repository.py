@@ -1,8 +1,10 @@
 from datetime import date, timedelta
 
+from fastapi_cache.decorator import cache
 from sqlalchemy import select, func, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from conf.cache import custom_key_builder
 from src.contacts.models import Contact
 from src.contacts.schemas import ContactSchema, ContactUpdateSchema
 from src.users.models import User
@@ -20,7 +22,7 @@ async def apply_contact_filters(stmt, limit: int, skip: int, days: int, email, f
     contacts = await db.execute(stmt)
     return contacts.scalars().all()
 
-
+@cache(expire=60, namespace='get_all_contacts', key_builder=custom_key_builder)
 async def get_all_contacts(limit: int, skip: int, days: int, email, fullname, db: AsyncSession, user_id: int):
     if user_id:
         stmt = select(Contact).filter_by(user_id=user_id)
@@ -29,7 +31,7 @@ async def get_all_contacts(limit: int, skip: int, days: int, email, fullname, db
     result = await apply_contact_filters(stmt, limit, skip, days, email, fullname, db)
     return result
 
-
+@cache(expire=60, namespace='get_contacts', key_builder=custom_key_builder)
 async def get_contacts(limit: int, skip: int, days: int, email, fullname, db: AsyncSession, user: User):
     stmt = select(Contact).filter_by(user=user)
     result = await apply_contact_filters(stmt, limit, skip, days, email, fullname, db)

@@ -13,8 +13,7 @@ async def get_temp_code(email: str, temp_code: str, db: AsyncSession) -> Tempora
     result = result.scalar_one_or_none()
     return result
 
-async def update_temp_code(email: str, code: str, db: AsyncSession):
-    temp_code = await get_temp_code(email, code, db)
+async def update_temp_code(temp_code: TemporaryCode, db: AsyncSession):
     temp_code.used_at = datetime.now()
     await db.commit()
 

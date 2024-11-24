@@ -97,7 +97,7 @@
     </nav>
 
     <header class="site-header d-flex flex-column justify-content-center align-items-center">
-        <div class="container">
+        <div class="container" style="min-height: 600px !important;">
             <div class="row d-flex justify-content-center align-items-center h-100">
                 <div class="col-12 col-md-8 col-lg-6 col-xl-5">
                     <div class="card bg-dark text-white" style="border-radius: 1rem;">
@@ -106,54 +106,7 @@
                             <div class="mb-md-5 mt-md-4 pb-5">
 
                                 <h2 class="fw-bold mb-2 text-white-50 text-uppercase" id="success-message">{{page_title}}</h2>
-                                <p class="text-white-50 mb-5" id="help-message">Please enter your password!</p>
 
-
-
-                                <form method="POST" action="/api/auth/reset_password/{{ token }}">
-                                <div class="form-outline form-white mb-4 position-relative">
-                                    <input type="password" id="typeEmailX" name="password" class="form-control form-control-lg" required />
-                                    <label class="form-label" for="typeEmailX">Password</label>
-                                    <span class="toggle-password" data-target="typeEmailX">
-                                        <span class="material-icons">visibility</span>
-                                    </span>
-                                    <div class="error-message" id="password-message">
-                                        Passwords do not match.
-                                    </div>
-                                </div>
-
-                                <div class="form-outline form-white mb-4 position-relative">
-                                    <input type="password" id="typePasswordX" name="password_check" class="form-control form-control-lg" required />
-                                    <label class="form-label" for="typePasswordX">Repeat password</label>
-                                    <span class="toggle-password" data-target="typePasswordX">
-                                        <span class="material-icons">visibility</span>
-                                    </span>
-
-                                    <div class="error-message" id="code-message">
-                                        ...
-                                    </div>
-
-                                </div>
-
-                                <div class="form-outline form-white mb-4 position-relative" id="">
-                                    <input type="text" id="codeInput" name="temp_code" class="form-control form-control-lg" required />
-                                    <label class="form-label" for="codeInput">Verification Code</label>
-
-                                </div>
-
-                                <button data-mdb-button-init data-mdb-ripple-init
-                                        class="btn btn-outline-light btn-lg px-5" type="submit">Submit
-                                </button>
-                            </form>
-
-
-                            </div>
-
-                            <div>
-                                <p class="mb-0 text-white-50">Don't have an account? <a href="#!"
-                                                                                        class="link-light fw-bold">Sign
-                                    Up</a>
-                                </p>
                             </div>
 
                         </div>
@@ -252,128 +205,6 @@
 <script src="/static/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/jquery.sticky.js"></script>
 <script src="/static/js/custom.js"></script>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-    const passwordField = document.getElementById("typeEmailX");
-    const repeatPasswordField = document.getElementById("typePasswordX");
-    const codeInput = document.getElementById("codeInput");
-    const submitButton = document.querySelector("button[type='submit']");
-    const passwordMessageContainer = document.getElementById("password-message");
-    const codeMessageContainer = document.getElementById("code-message");
-
-    function checkPasswordFields() {
-        const password = passwordField.value.trim();
-        const repeatPassword = repeatPasswordField.value.trim();
-
-        if (password.length < 6 || password.length > 8) {
-            passwordMessageContainer.textContent = "Password must be 6-8 characters long";
-            passwordMessageContainer.style.color = "orange";
-            passwordMessageContainer.classList.add("active");
-            submitButton.disabled = true;
-            return false;
-        }
-
-        if (password !== repeatPassword) {
-            passwordMessageContainer.textContent = "Passwords do not match.";
-            passwordMessageContainer.style.color = "red";
-            passwordMessageContainer.classList.add("active");
-            submitButton.disabled = true;
-            return false;
-        }
-
-        passwordMessageContainer.textContent = "Passwords match!";
-        passwordMessageContainer.style.color = "#28a745";
-        passwordMessageContainer.classList.add("active");
-        return true;
-    }
-
-    function checkCodeField() {
-        const code = codeInput.value.trim();
-
-        if (code.length !== 6) {
-            codeMessageContainer.textContent = "Verification code must be exactly 6 characters.";
-            codeMessageContainer.style.color = "orange";
-            codeMessageContainer.classList.add("active");
-            submitButton.disabled = true;
-            return false;
-        }
-
-        codeMessageContainer.textContent = "";
-        codeMessageContainer.classList.remove("active");
-        return true;
-    }
-
-    function checkInputs() {
-        const isPasswordValid = checkPasswordFields();
-        const isCodeValid = checkCodeField();
-
-        // Кнопка становится доступной, только если оба условия выполнены
-        submitButton.disabled = !(isPasswordValid && isCodeValid);
-    }
-
-    passwordField.addEventListener("input", checkInputs);
-    repeatPasswordField.addEventListener("input", checkInputs);
-    codeInput.addEventListener("input", checkInputs);
-
-    const togglePasswordIcons = document.querySelectorAll(".toggle-password");
-
-    togglePasswordIcons.forEach(icon => {
-        icon.addEventListener("click", function () {
-            const targetId = this.getAttribute("data-target");
-            const passwordField = document.getElementById(targetId);
-            const iconElement = this.querySelector(".material-icons");
-
-            if (passwordField.type === "password") {
-                passwordField.type = "text";
-                iconElement.textContent = "visibility_off";
-            } else {
-                passwordField.type = "password";
-                iconElement.textContent = "visibility";
-            }
-        });
-    });
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-    const form = document.querySelector("form");
-
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const formData = new FormData(form);
-        const response = await fetch(form.action, {
-            method: "POST",
-            body: formData,
-        });
-
-        const helpMessage = document.getElementById("help-message");
-        const successMessage = document.getElementById("success-message");
-        const errorMessage = document.getElementById("password-message");
-
-        if (response.ok) {
-            const data = await response.json();
-            successMessage.textContent = data.message;
-            successMessage.style.display = "block";
-
-            helpMessage.style.display = "none";
-            form.style.display = "none";
-
-            // setTimeout(() => {
-            //     window.location.href = "/login";
-            // }, 10000);
-        } else {
-            const errorData = await response.json();
-            errorMessage.textContent = errorData.message || "An error occurred";
-            errorMessage.style.display = "block";
-            errorMessage.style.color = "red";
-        }
-    });
-});
-
-
-</script>
-
 
 </body>
 </html>
