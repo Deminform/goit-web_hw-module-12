@@ -1,8 +1,7 @@
+import inspect
 from typing import Callable, Any, Optional, Tuple, Dict, Awaitable, Union
-
 from starlette.requests import Request
 from starlette.responses import Response
-
 
 class CustomKeyBuilder:
     def __call__(
@@ -16,14 +15,34 @@ class CustomKeyBuilder:
         kwargs: Dict[str, Any],
     ) -> Union[Awaitable[str], str]:
 
-
-        # Creating key parts
         key_parts = [__namespace]
 
-        # Adding arguments (positional)
-        key_parts.extend(str(arg) for arg in args[:2] if arg is not None)
-        return ":".join(key_parts)
+        signature = inspect.signature(__function)
+        parameters = list(signature.parameters.values())
 
+        args_dict = {}
+        for param, arg in zip(parameters, args):
+            args_dict[param.name] = arg
 
-# An instance of the class that we will pass to the key_builder.
+        user = args_dict.get("user")
+        if user and hasattr(user, "id"):
+            key_parts.append(f"user={user.id}")
+        else:
+            key_parts.append("user=anonymous")
+
+        args_dict.pop("db", None)
+        args_dict.pop("user", None)
+
+        for k in sorted(args_dict.keys()):
+            v = args_dict[k]
+            key_parts.append(f"{k}={v}")
+
+        # Если есть kwargs, также добавляем их
+        for k in sorted(kwargs.keys()):
+            v = kwargs[k]
+            key_parts.append(f"{k}={v}")
+
+        cache_key = ":".join(key_parts)
+        return cache_key
+
 custom_key_builder = CustomKeyBuilder()

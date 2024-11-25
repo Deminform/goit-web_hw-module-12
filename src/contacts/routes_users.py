@@ -1,4 +1,5 @@
 from fastapi import HTTPException, Depends, status, Query, APIRouter
+from fastapi_cache import FastAPICache
 from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,14 +21,14 @@ router = APIRouter(prefix="/contacts", tags=["contacts"])
             dependencies=[Depends(RateLimiter(times=60, seconds=60))])
 async def get_contacts_by_filters(
     limit: int = Query(10, ge=10, le=100),
-    offset: int = Query(None, ge=0),
+    offset: int = Query(0, ge=0),
     days_to_birthday: int = Query(None, ge=0, le=365, description="None - for disable filter by birthday"),
     email: str = Query(None, description="Full or part of an email"),
     fullname: str = Query(None, description="Full or part of a name"),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(auth_service.get_current_user)):
 
-    contacts = await repo_contacts.get_contacts(limit, offset, days_to_birthday, email, fullname, db, user)
+    contacts = await repo_contacts.get_my_contacts(limit, offset, days_to_birthday, email, fullname, db, user)
     return contacts
 
 
@@ -62,6 +63,7 @@ async def create_contact(
             status_code=status.HTTP_409_CONFLICT, detail="Contact already exists.")
 
 
+
 @router.put("/{contact_id}", response_model=ContactResponseSchema, dependencies=[Depends(RateLimiter(times=4, seconds=60))])
 async def update_contact(
     body: ContactUpdateSchema,
@@ -69,11 +71,13 @@ async def update_contact(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(auth_service.get_current_user)):
 
-    contact = await repo_contacts.update_contact(contact_id, body, db, user)
-    if contact is None:
+    try:
+        contact = await repo_contacts.update_contact(contact_id, body, db, user)
+        return contact
+    except IntegrityError:
+        await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
-    return contact
+            status_code=status.HTTP_409_CONFLICT, detail="Contact not found.")
 
 
 @router.delete("/{contact_id}", status_code=status.HTTP_204_NO_CONTENT,
@@ -83,5 +87,10 @@ async def delete_contact(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(auth_service.get_current_user)):
 
-    contact = await repo_contacts.delete_contact(contact_id, db, user)
-    return contact
+    try:
+        contact = await repo_contacts.delete_contact(contact_id, db, user)
+        return contact
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Contact not found.")
