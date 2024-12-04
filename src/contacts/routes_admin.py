@@ -26,6 +26,28 @@ async def get_all_contacts_by_filters(
         db: AsyncSession = Depends(get_db),
         user_id: int = Query(None, description='Filter contacts by specified user "user id"'),
         user: User = Depends(auth_service.get_current_user)):
+    """
+    Retrieve a list of contacts based on provided filters.
 
+    :param limit: Maximum number of contacts to retrieve (default: 10, range: 10-100).
+    :type limit: int
+    :param offset: Number of contacts to skip (default: None, must be >=0).
+    :type offset: int, optional
+    :param days_to_birthday: Filter contacts by number of days until their birthday (default: None, range: 0-365).
+    :type days_to_birthday: int, optional
+    :param email: Filter contacts by full or part of an email address (default: None).
+    :type email: str, optional
+    :param fullname: Filter contacts by full or part of a name (default: None).
+    :type fullname: str, optional
+    :param db: The database session.
+    :type db: AsyncSession
+    :param user_id: Filter contacts by specified user's ID (default: None).
+    :type user_id: int, optional
+    :param user: The currently authenticated user.
+    :type user: User
+
+    :return: A list of contacts matching the specified filters.
+    :rtype: list[ContactResponseSchema]
+    """
     contacts = await repo_contacts.get_all_contacts(limit, offset, days_to_birthday, email, fullname, db, user_id)
     return contacts

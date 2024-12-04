@@ -1,5 +1,4 @@
 from datetime import datetime
-from pathlib import Path
 
 from fastapi import (
     HTTPException,
@@ -20,22 +19,24 @@ from fastapi.security import (
 
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi_limiter.depends import RateLimiter
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from conf.config import app_config
+from conf import messages
 from database.db import get_db
 from src.services.auth.repository import send_verify_email, send_reset_password_email
 from src.services.temp_code.repository import get_temp_code, create_temp_code, update_temp_code
 from src.users import repository as user_repository
-from src.users.schemas import UserSchema, UserResponseSchema, TokenSchema, RequestEmailSchema, ResetPasswordSchema
+from src.users.schemas import UserSchema, UserResponseSchema, TokenSchema, RequestEmailSchema
 from src.services.auth.jwt_auth import auth_service
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 get_refresh_token = HTTPBearer()
-BASE_DIR = Path('.')
+BASE_DIR = app_config.BASE_DIR
 templates = Jinja2Templates(directory=BASE_DIR / 'src' / 'templates')
 
 router.mount('/static', StaticFiles(directory=BASE_DIR / 'src' / 'static'), name="static")
@@ -53,7 +54,7 @@ async def signup(
     exist_user = await user_repository.get_user_by_email(body.email, db)
     if exist_user:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Account already exists"
+            status_code=status.HTTP_409_CONFLICT, detail=messages.ACCOUNT_EXIST
         )
     body.password = auth_service.get_password_hash(body.password)
     new_user = await user_repository.create_user(body, db)
@@ -70,17 +71,17 @@ async def login(
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email"
+            detail=messages.INCORRECT_EMAIL
         )
     if not user.confirmed:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email not confirmed"
+            detail=messages.EMAIL_NOT_CONFIRMED
         )
     if not auth_service.verify_password(body.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect password"
+            detail=messages.INCORRECT_PASSWORD
         )
     return await create_and_update_tokens(user, db)
 
@@ -97,7 +98,7 @@ async def refresh_token(
         await user_repository.update_token(user, None, db)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect refresh token"
+            detail=messages.INCORRECT_REFRESH_TOKEN
         )
     return await create_and_update_tokens(user, db)
 
@@ -112,7 +113,7 @@ async def verify_email(
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Verification failed"
+            detail=messages.VERIFICATION_FAILED
         )
     if user.confirmed:
         return {"message": "Email is already confirmed"}

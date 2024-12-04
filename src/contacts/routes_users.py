@@ -27,8 +27,28 @@ async def get_contacts_by_filters(
     fullname: str = Query(None, description="Full or part of a name"),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(auth_service.get_current_user)):
+    """
+    Retrieve a list of contacts filtered by various criteria.
 
-    contacts = await repo_contacts.get_my_contacts(limit, offset, days_to_birthday, email, fullname, db, user)
+    :param limit: The maximum number of contacts to retrieve (default 10, between 10 and 100).
+    :type limit: int
+    :param offset: The number of contacts to skip before starting to collect the result set (default 0).
+    :type offset: int
+    :param days_to_birthday: Filter contacts by days remaining to their next birthday (optional).
+    :type days_to_birthday: int, optional
+    :param email: Filter contacts by email or part of an email (optional).
+    :type email: str, optional
+    :param fullname: Filter contacts by full name or part of a name (optional).
+    :type fullname: str, optional
+    :param db: Database session dependency.
+    :type db: AsyncSession
+    :param user: The current authenticated user.
+    :type user: User
+
+    :return: List of filtered contacts.
+    :rtype: list[ContactResponseSchema]
+    """
+    contacts = await repo_contacts.get_my_contacts(db, user, limit, offset, days_to_birthday, email, fullname)
     return contacts
 
 
@@ -38,7 +58,21 @@ async def get_contact(
     contact_id: int,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(auth_service.get_current_user)):
+    """
+    Retrieve a contact by its ID.
 
+    :param contact_id: The ID of the contact to retrieve.
+    :type contact_id: int
+    :param db: Database session dependency.
+    :type db: AsyncSession
+    :param user: The current authenticated user.
+    :type user: User
+
+    :return: The requested contact if found.
+    :rtype: ContactResponseSchema
+
+    :raises HTTPException: If the contact is not found, raises a 404 error.
+    """
     contact = await repo_contacts.get_contact_by_id(contact_id, db, user)
     if contact is None:
         raise HTTPException(
@@ -53,7 +87,21 @@ async def create_contact(
     body: ContactSchema,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(auth_service.get_current_user)):
+    """
+    Create a new contact.
 
+    :param body: The contact data to create.
+    :type body: ContactSchema
+    :param db: Database session dependency.
+    :type db: AsyncSession
+    :param user: The current authenticated user.
+    :type user: User
+
+    :return: The created contact.
+    :rtype: ContactResponseSchema
+
+    :raises HTTPException: If the contact already exists, raises a 409 error.
+    """
     try:
         contact = await repo_contacts.create_contact(body, db, user)
         return contact
@@ -70,7 +118,23 @@ async def update_contact(
     contact_id: int,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(auth_service.get_current_user)):
+    """
+    Update an existing contact.
 
+    :param body: The updated contact data.
+    :type body: ContactUpdateSchema
+    :param contact_id: The ID of the contact to update.
+    :type contact_id: int
+    :param db: Database session dependency.
+    :type db: AsyncSession
+    :param user: The current authenticated user.
+    :type user: User
+
+    :return: The updated contact.
+    :rtype: ContactResponseSchema
+
+    :raises HTTPException: If the contact is not found, raises a 409 error.
+    """
     try:
         contact = await repo_contacts.update_contact(contact_id, body, db, user)
         return contact
@@ -86,7 +150,21 @@ async def delete_contact(
     contact_id: int,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(auth_service.get_current_user)):
+    """
+    Delete a contact by its ID.
 
+    :param contact_id: The ID of the contact to delete.
+    :type contact_id: int
+    :param db: Database session dependency.
+    :type db: AsyncSession
+    :param user: The current authenticated user.
+    :type user: User
+
+    :return: The deleted contact.
+    :rtype: None
+
+    :raises HTTPException: If the contact is not found, raises a 409 error.
+    """
     try:
         contact = await repo_contacts.delete_contact(contact_id, db, user)
         return contact

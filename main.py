@@ -1,6 +1,6 @@
 import re
 from contextlib import asynccontextmanager
-from typing import Callable
+from typing import Callable, Dict
 
 from pathlib import Path
 
@@ -14,6 +14,7 @@ from fastapi_limiter import FastAPILimiter
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 
+from conf import messages
 from src.contacts import routes_users as contacts_routes
 from src.contacts import routes_admin as contacts_admin_routes
 from src.services import health_checker, routes_email_status
@@ -22,9 +23,11 @@ from src.users import routes as users_routes
 from conf.config import app_config
 
 user_agent_ban_list = []
-BASE_DIR = Path('.')
-templates = Jinja2Templates(directory=BASE_DIR / 'src' / 'templates')
-FAVICON_PATH = BASE_DIR / 'src' / 'static' / 'images' / 'favicon.png'
+BASE_DIR = Path(__file__).parent
+templates_path = BASE_DIR.joinpath('src', 'templates')
+static_files_path = BASE_DIR.joinpath('src', 'static')
+FAVICON_PATH = BASE_DIR.joinpath('src', 'static', 'images', 'favicon.png')
+templates = Jinja2Templates(directory=templates_path)
 
 
 @asynccontextmanager
@@ -48,7 +51,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount('/static', StaticFiles(directory=BASE_DIR / 'src' / 'static'), name="static")
+app.mount('/static', StaticFiles(directory=static_files_path), name="static")
 app.include_router(auth_routes.router, prefix="/api")
 app.include_router(users_routes.router, prefix="/api")
 app.include_router(contacts_admin_routes.router, prefix="/api")
@@ -64,7 +67,7 @@ async def user_agent_ban_middleware(request: Request, call_next: Callable):
         if re.search(ban_pattern, user_agent):
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={'detail': 'You are banned'}
+                content={'detail': messages.BANNED}
             )
     try:
         response = await call_next(request)
@@ -77,7 +80,7 @@ async def user_agent_ban_middleware(request: Request, call_next: Callable):
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Internal Server Error"}
+        content={"detail": messages.INTERNAL_SERVER_ERROR}
     )
 
 
@@ -89,3 +92,4 @@ async def favicon():
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse('index.html', {'request': request, 'page_title': 'Python Test Landing Page'})
+

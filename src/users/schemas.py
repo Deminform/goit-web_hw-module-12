@@ -1,7 +1,6 @@
 import enum
 
-from pydantic import BaseModel, Field, EmailStr
-from sqlalchemy import Integer
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class RoleEnum(enum.Enum):
@@ -12,7 +11,7 @@ class RoleEnum(enum.Enum):
 
 class UserSchema(BaseModel):
     username: str = Field(min_length=3, max_length=50)
-    email: EmailStr
+    email: str
     password: str = Field(min_length=6, max_length=8)
 
 
@@ -22,8 +21,7 @@ class UserResponseSchema(BaseModel):
     email: str
     avatar: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenSchema(BaseModel):
@@ -33,7 +31,7 @@ class TokenSchema(BaseModel):
 
 
 class RequestEmailSchema(BaseModel):
-    email: EmailStr
+    email: str
 
 
 class ResetPasswordSchema(BaseModel):

@@ -1,3 +1,4 @@
+from pydantic import EmailStr
 from sqlalchemy import String, DateTime, func, Integer, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

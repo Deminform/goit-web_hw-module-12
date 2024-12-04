@@ -1,5 +1,7 @@
+from pathlib import Path
+
 from sqlalchemy.orm import DeclarativeBase
-from pydantic import field_validator, EmailStr
+from pydantic import field_validator, EmailStr, ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -48,6 +50,9 @@ class Settings(BaseSettings):
     # Temporary code --------------------------------------------------------------------------------------
     TEMP_CODE_LIFETIME: int = 15  # minutes
 
+    BASE_DIR: Path | None = Path(__file__).parent.parent
+
+
     @field_validator('ALGORITHM')
     @classmethod
     def validate_algorithm(cls, v):
@@ -55,10 +60,11 @@ class Settings(BaseSettings):
             raise ValueError('Algorithm must be HS256 or HS512.')
         return v
 
-    class Config:
-        # env_file = ConfigDict(extra='ignore', env_file='.env', env_file_encoding='utf-8')  # noqa
-        extra = 'ignore'
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
+    model_config = ConfigDict(extra = 'ignore', env_file = '.env', env_file_encoding = 'utf-8') # noqa
+        # env_file = ConfigDict(extra='ignore', env_file='.env', env_file_encoding='utf-8')
+        # extra = 'ignore'
+        # env_file = '.env'
+        # env_file_encoding = 'utf-8'
+
 
 app_config = Settings()

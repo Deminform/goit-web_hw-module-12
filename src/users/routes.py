@@ -22,8 +22,20 @@ cloudinary.config(
     secure=True,
 )
 
+
 @router.get('/me', response_model=UserResponseSchema, dependencies=[Depends(RateLimiter(times=10, seconds=60))])
 async def get_current_user(user: User = Depends(auth_service.get_current_user)):
+    """
+    Get the current authenticated user's details.
+
+    This endpoint allows the current authenticated user to retrieve their own user details.
+
+    :param user: The current authenticated user, automatically injected by dependency.
+    :type user: User
+
+    :return: The current authenticated user's details.
+    :rtype: User
+    """
     return user
 
 
@@ -31,6 +43,22 @@ async def get_current_user(user: User = Depends(auth_service.get_current_user)):
 async def get_current_user(file: UploadFile = File(),
                            user: User = Depends(auth_service.get_current_user),
                            db: AsyncSession = Depends(get_db)):
+    """
+    Update the current authenticated user's avatar.
+
+    This endpoint allows the current authenticated user to update their avatar by uploading a new image file.
+    The image is uploaded to Cloudinary, and the public URL is updated in the user's profile.
+
+    :param file: The new avatar image file to be uploaded.
+    :type file: UploadFile
+    :param user: The current authenticated user, automatically injected by dependency.
+    :type user: User
+    :param db: The asynchronous database session, automatically injected by dependency.
+    :type db: AsyncSession
+
+    :return: The updated user details with the new avatar URL.
+    :rtype: User
+    """
     ext = Path(file.filename).suffix.lower()
     unique_filename = uuid.uuid4().hex
     res = cloudinary.uploader.upload(file.file, public_id=unique_filename, overwrite=True, folder=app_config.CLOUDINARY_FOLDER)

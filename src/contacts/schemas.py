@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
 
 class ContactSchema(BaseModel):
@@ -16,9 +16,7 @@ class ContactResponseSchema(ContactSchema):
     id: int
     created_at: datetime | None
     updated_at: datetime | None
-
-    # class Config:
-    #     from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ContactCreateSchema(ContactSchema):

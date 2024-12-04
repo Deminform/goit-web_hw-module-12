@@ -22,8 +22,19 @@ conf = ConnectionConfig(
     TEMPLATE_FOLDER=Path(__file__).parent / "templates",
 )
 
+async def send_verify_email(email: str, username: str, host: str):
+    """
+    Sends a verification email to a user.
 
-async def send_verify_email(email: EmailStr, username: str, host: str):
+    :param email: The email address of the recipient.
+    :type email: EmailStr
+    :param username: The username of the recipient.
+    :type username: str
+    :param host: The host URL for email links.
+    :type host: str
+
+    :raises ConnectionErrors: If any connection error occurs during the email sending process.
+    """
     try:
         token_verification = auth_service.create_email_token({'sub': email})
         message = MessageSchema(
@@ -38,7 +49,21 @@ async def send_verify_email(email: EmailStr, username: str, host: str):
         print(err)
 
 
-async def send_reset_password_email(email: EmailStr, username: str, temp_code: str, host: str):
+async def send_reset_password_email(email: str, username: str, temp_code: str, host: str):
+    """
+    Sends a password reset email to a user.
+
+    :param email: The email address of the recipient.
+    :type email: EmailStr
+    :param username: The username of the recipient.
+    :type username: str
+    :param temp_code: The temporary code for password reset.
+    :type temp_code: str
+    :param host: The host URL for email links.
+    :type host: str
+
+    :raises ConnectionErrors: If any connection error occurs during the email sending process.
+    """
     try:
         token_password_reset = auth_service.create_reset_password_token(email)
         message = MessageSchema(
