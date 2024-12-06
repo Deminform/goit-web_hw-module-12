@@ -7,5 +7,8 @@ INCORRECT_REFRESH_TOKEN = 'Incorrect refresh token'
 VERIFICATION_FAILED = 'Verification failed'
 INTERNAL_SERVER_ERROR = 'Internal Server Error'
 BANNED = 'You are banned'
+CONTACT_ALREADY_EXISTS = 'Contact already exists'
+CONTACT_NOT_FOUND = 'Contact not found'
+USER_NOT_FOUND = 'User not found'
 
 # TODO REPLACE ALL ERROR MESSAGES IN PROJECT

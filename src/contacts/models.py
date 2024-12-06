@@ -11,8 +11,8 @@ class Contact(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     first_name: Mapped[str] = mapped_column(String(50), nullable=False)
     last_name: Mapped[str] = mapped_column(String(50), nullable=False)
-    email: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
-    phone: Mapped[str] = mapped_column(String(10), nullable=False, unique=True)
+    email: Mapped[str] = mapped_column(String(100), nullable=False)
+    phone: Mapped[str] = mapped_column(String(10), nullable=False)
     birthday: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     description: Mapped[str] = mapped_column(String(300), nullable=True)
 

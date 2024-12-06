@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from unittest.mock import AsyncMock
 
 import pytest
@@ -6,6 +7,7 @@ import pytest_asyncio
 from fastapi.testclient import TestClient
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
+from sqlalchemy import event
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from fastapi_limiter.depends import RateLimiter
@@ -23,7 +25,24 @@ engine = create_async_engine(
 )
 TestingSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, expire_on_commit=False, bind=engine)
 
+@event.listens_for(engine.sync_engine, "connect")
+def register_sqlite_functions(dbapi_connection, connection_record):
+    dbapi_connection.create_function("date_part", 2, date_part)
+
 test_user = {'username': 'pacman', 'email': 'pacman@test.com', 'password': '000000'}
+
+
+# Define a custom function to emulate date_part
+def date_part(part: str, date_str: str):
+    if part == "doy":  # Day of year
+        try:
+            # Consider the possible availability of time
+            date = datetime.strptime(date_str.split()[0], "%Y-%m-%d")
+            day_of_year = date.timetuple().tm_yday
+            return day_of_year
+        except ValueError as e:
+            return None
+    raise ValueError(f"Unsupported part: {part}")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -71,6 +90,11 @@ def client():
 @pytest_asyncio.fixture()
 async def get_access_token():
     access_token = await auth_service.create_access_token(data={"sub": test_user['email']})
+    return access_token
+
+@pytest_asyncio.fixture()
+async def get_refresh_token():
+    access_token = await auth_service.create_refresh_token(data={"sub": test_user['email']})
     return access_token
 
 @pytest_asyncio.fixture()

@@ -1,11 +1,13 @@
-from fastapi import Depends, Query, APIRouter
+from fastapi import Depends, Query, APIRouter, status, HTTPException
 from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from conf import messages
 from database.db import get_db
 from src.contacts import repository as repo_contacts
 from src.contacts.schemas import ContactResponseSchema
 from src.services.auth.jwt_auth import auth_service
+from src.users.repository import get_user_by_id
 from src.users.roles_checker import RoleChecker
 from src.users.models import User
 from src.users.schemas import RoleEnum
@@ -49,5 +51,10 @@ async def get_all_contacts_by_filters(
     :return: A list of contacts matching the specified filters.
     :rtype: list[ContactResponseSchema]
     """
-    contacts = await repo_contacts.get_all_contacts(limit, offset, days_to_birthday, email, fullname, db, user_id)
+    result = await get_user_by_id(user_id, db)
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=messages.USER_NOT_FOUND
+        )
+    contacts = await repo_contacts.get_all_contacts(db, user_id, limit, offset, days_to_birthday, email, fullname)
     return contacts

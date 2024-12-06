@@ -26,6 +26,13 @@ async def get_user_by_email(email: str, db: AsyncSession) -> User:
     return user
 
 
+async def get_user_by_id(user_id: int, db: AsyncSession) -> User:
+    stmt = select(User).filter_by(id=user_id)
+    user = await db.execute(stmt)
+    user = user.scalar_one_or_none()
+    return user
+
+
 async def create_user(body: UserSchema, db: AsyncSession):
     """
     Create a new user with the given information.

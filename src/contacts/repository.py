@@ -10,6 +10,14 @@ from src.contacts.schemas import ContactSchema, ContactUpdateSchema
 from src.users.models import User
 
 
+async def is_contact_exist(email: str, phone: str, db: AsyncSession, user: User) -> Contact | None:
+    stmt = select(Contact).filter_by(email=email, phone=phone, user_id=user.id)
+    stmt = await db.execute(stmt)
+    stored_contact = stmt.scalar_one_or_none()
+    if stored_contact:
+        return stored_contact
+    return None
+
 async def apply_contact_filters(stmt, days: int = None, email: str = None, fullname: str = None):
     """
     Apply filters to the contact query based on the provided parameters including pagination, upcoming birthdays, email, and fullname.
@@ -111,6 +119,7 @@ async def get_my_contacts(db: AsyncSession, user: User, limit: int = 10, skip: i
     :rtype: List[Contact]
     """
     stmt = select(Contact).filter_by(user_id=user.id)
+    stmt = stmt.offset(skip).limit(limit)
     stmt = await apply_contact_filters(stmt, days, email, fullname)
     result = await db.execute(stmt)
     result = result.scalars().all()
@@ -171,17 +180,19 @@ async def update_contact(contact_id: int, body: ContactUpdateSchema, db: AsyncSe
     :return: The updated contact or None if not found
     :rtype: Optional[Contact]
     """
-    await clear_cache(user.id)
     stmt = select(Contact).filter_by(id=contact_id, user=user)
     result = await db.execute(stmt)
     contact = result.scalar_one_or_none()
 
-    for key, value in body.model_dump(exclude_unset=True).items():
-        setattr(contact, key, value)
+    if contact:
+        for key, value in body.model_dump(exclude_unset=True).items():
+            setattr(contact, key, value)
 
-    db.add(contact)
-    await db.commit()
-    await db.refresh(contact)
+        db.add(contact)
+        await db.commit()
+        await db.refresh(contact)
+        await clear_cache(user.id)
+
     return contact
 
 

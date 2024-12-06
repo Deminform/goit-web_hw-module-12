@@ -42,9 +42,7 @@ templates = Jinja2Templates(directory=BASE_DIR / 'src' / 'templates')
 router.mount('/static', StaticFiles(directory=BASE_DIR / 'src' / 'static'), name="static")
 
 
-@router.post(
-    "/signup", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED
-)
+@router.post("/signup", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)
 async def signup(
         body: UserSchema,
         bt: BackgroundTasks,
@@ -86,7 +84,7 @@ async def login(
     return await create_and_update_tokens(user, db)
 
 
-@router.get("/refresh_token", response_model=TokenSchema, dependencies=[Depends(RateLimiter(times=1, seconds=60))])
+@router.get("/refresh_token", response_model=TokenSchema, dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def refresh_token(
         credentials: HTTPAuthorizationCredentials = Security(get_refresh_token),
         db: AsyncSession = Depends(get_db),

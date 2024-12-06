@@ -25,7 +25,7 @@ class ContactCreateSchema(ContactSchema):
 
 class ContactUpdateSchema(ContactSchema):
     first_name: str = Field(None, min_length=2, max_length=100)
-    last_name: EmailStr = Field(None)
+    last_name: str = Field(None)
     email: EmailStr = Field(None, max_length=50)
     phone: str = Field(None, max_length=10)
     birthday: date = Field(None)

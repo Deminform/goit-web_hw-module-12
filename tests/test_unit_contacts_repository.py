@@ -2,14 +2,12 @@ import unittest
 from unittest.mock import MagicMock, patch, AsyncMock
 
 from fastapi_cache.backends.inmemory import InMemoryBackend
-
-import src.contacts.repository
 from fastapi_cache import FastAPICache
-
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from faker import Faker
 
+from src.contacts.schemas import ContactSchema, ContactUpdateSchema
+from src.users.models import User
 from src.contacts.models import Contact
 from src.contacts.repository import (
     get_my_contacts,
@@ -19,10 +17,8 @@ from src.contacts.repository import (
     create_contact,
     update_contact,
     apply_contact_filters,
-
+    is_contact_exist
 )
-from src.contacts.schemas import ContactSchema, ContactUpdateSchema
-from src.users.models import User
 
 faker = Faker()
 
@@ -36,8 +32,8 @@ class TestContacts(unittest.IsolatedAsyncioTestCase):
             id=1,
             first_name=faker.first_name(),
             last_name=faker.last_name(),
-            email=faker.email(),
-            phone=faker.phone_number()[:10],
+            email='jason@example.com',
+            phone='123654987',
             birthday=faker.past_datetime(),  # type: ignore
             description=faker.text(),
             user_id=cls.user.id
@@ -65,6 +61,22 @@ class TestContacts(unittest.IsolatedAsyncioTestCase):
 
     def tearDown(cls):
         ...
+
+
+    async def test_is_contact_exist(self):
+        mock_contact = MagicMock()
+        mock_contact.scalar_one_or_none.return_value = self.contact
+        self.session.execute.return_value = mock_contact
+        result = await is_contact_exist(self.contact.email, self.contact.phone, db=self.session, user=self.user)
+        self.assertEqual(result, self.contact)
+
+    async def test_is_contact_exist_incorrect_data(self):
+        mock_contact = MagicMock()
+        mock_contact.scalar_one_or_none.return_value = None
+        self.session.execute.return_value = mock_contact
+        result = await is_contact_exist(self.contact.email, self.contact.phone, db=self.session, user=self.user)
+        self.assertNotEqual(result, self.contact)
+
 
     @patch('src.contacts.repository.apply_contact_filters')
     async def test_get_my_contacts(self, apply_filters):

@@ -1,4 +1,4 @@
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock
 
 import pytest
 from sqlalchemy import select
@@ -74,3 +74,14 @@ def test_login__validation_error(client, redis_mock):
     assert response.status_code == 422, response.text
     data = response.json()
     assert 'detail' in data
+
+
+def test_refresh_token(client, redis_mock, get_refresh_token):
+    response = client.get('api/auth/refresh_token', headers={'Authorization': f'Bearer {get_refresh_token}'},
+                          json={'username': user_data['email'], 'password': 'password'})
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert 'access_token' in data
+    assert 'refresh_token' in data
+    assert 'token_type' in data
+    print(get_refresh_token)
