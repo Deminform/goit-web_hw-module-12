@@ -49,8 +49,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-#addopts = "--doctest-modules"
-#testpath = "tests"
+addopts = "--cov=src --cov-report=term-missing"
 asyncio_default_fixture_loop_scope = "session"
 pythonpath = "."
 filterwarnings = [

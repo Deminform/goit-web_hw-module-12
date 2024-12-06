@@ -91,11 +91,11 @@ def client():
 async def get_access_token():
     access_token = await auth_service.create_access_token(data={"sub": test_user['email']})
     return access_token
-
-@pytest_asyncio.fixture()
-async def get_refresh_token():
-    access_token = await auth_service.create_refresh_token(data={"sub": test_user['email']})
-    return access_token
+#
+# @pytest_asyncio.fixture()
+# async def get_refresh_token():
+#     refresh_token = await auth_service.create_refresh_token(data={"sub": test_user['email']})
+#     return refresh_token
 
 @pytest_asyncio.fixture()
 async def redis_mock(monkeypatch):

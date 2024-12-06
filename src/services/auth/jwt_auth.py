@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
 
+from conf import messages
 from conf.config import app_config
 from database.db import get_db
 from src.users import repository as user_repository
@@ -121,9 +122,9 @@ class Auth:
             if payload['scope'] == 'refresh_token':
                 email = payload['sub']
                 return email
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid scope for token')
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=messages.INVALID_SCOPE_TOKEN)
         except JWTError:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate credentials')
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=messages.INCORRECT_REFRESH_TOKEN)
 
     @staticmethod
     async def get_current_user(token: str = Depends(oauth2_verify_email_scheme), db: AsyncSession = Depends(get_db)):

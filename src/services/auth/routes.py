@@ -102,10 +102,7 @@ async def refresh_token(
 
 
 @router.get("/verify_email/{token}", dependencies=[Depends(RateLimiter(times=3, seconds=60))])
-async def verify_email(
-        token: str,
-        db: AsyncSession = Depends(get_db)
-):
+async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
     email = await auth_service.get_email_from_token(token)
     user = await user_repository.get_user_by_email(email, db)
     if user is None:
